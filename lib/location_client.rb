@@ -12,8 +12,9 @@ class LocationClient  < GenericAPIClient
       :address => "#{msisdn}"
      }
      qparams=qparams.merge config[:params] 
-     return get("",qparams) do |request,response|
-        return_nil_on_error(response)
-     end       
+     result=get("",qparams) do |request,response|
+        raise_exception_on_error(response)
+     end
+     return result      
   end
 end
