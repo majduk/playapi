@@ -1,6 +1,6 @@
 require 'generic_api_client'
 
-class LocationClient
+class LocationClient  < GenericAPIClient
 
   def self.query(msisdn)
      qparams={
