@@ -7,8 +7,9 @@ class MnpClient  < GenericAPIClient
       "show_imsi"=>"true",
       "target" => "#{msisdn}"
     }
-    return get("",qparams) do |request,response|
-        return_nil_on_error(response)
+    result=get("",qparams) do |request,response|
+        raise_exception_on_error(response)
     end
+    return result
   end
 end
