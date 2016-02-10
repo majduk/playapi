@@ -9,5 +9,6 @@ class MnpClient
     }
     return get("",qparams) do |request,response|
         return_nil_on_error(response)
+    end
   end
 end
