@@ -10,6 +10,6 @@ class MnpClient  < GenericAPIClient
     result=get("",qparams) do |request,response|
         raise_exception_on_error(response)
     end
-    return result
+    return result["api"]["request"]["mnp"]
   end
 end
