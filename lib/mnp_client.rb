@@ -1,6 +1,6 @@
 require 'generic_api_client'
 
-class MnpClient
+class MnpClient  < GenericAPIClient
   def self.query(msisdn)
     qparams={
       "output"=>"json",
