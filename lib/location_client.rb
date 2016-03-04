@@ -11,7 +11,7 @@ class LocationClient  < GenericAPIClient
       :maximumAge=>100, 
       :address => "#{msisdn}"
      }
-     qparams=qparams.merge config[:params] 
+     qparams=qparams.merge config[:params] unless config[:params].blank?
      result=get("",qparams) do |request,response|
         raise_exception_on_error(response)
      end
