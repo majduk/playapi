@@ -35,26 +35,31 @@ class UssdAuthClient < GenericAPIClient
         }
       }
      )
-     Rails.logger.debug("UssdAuthClient authenticate request #{body}")
-     response = post( "",body)    
-     Rails.logger.debug("UssdAuthClient authenticate response #{response}")      
-     
-     if not response.nil?
-        sid=response["ussdSessionCreationParameters"]["ussdSessionInformation"]["ussdSessionIdentifier"]
-        user_input=response["ussdSessionCreationParameters"]["outboundSessionMessageRequest"]["outboundUSSDTextMessage"]["response"]
-     else 
-        user_input=nil
-     end
-     res=( params[:expect] == user_input )
-     if not response.nil?
-      if res
-        terminate_session sid, params[:response_ok]
-      else
-        terminate_session sid, params[:response_cancel]
-      end
-     end
-     Rails.logger.debug("UssdAuthClient authenticate: #{res}")
-     return res  
+    begin
+        Rails.logger.debug("UssdAuthClient authenticate request #{body}")
+        response = post( "",body)    
+        Rails.logger.debug("UssdAuthClient authenticate response #{response}")      
+         
+        if not response.nil?
+            sid=response["ussdSessionCreationParameters"]["ussdSessionInformation"]["ussdSessionIdentifier"]
+            user_input=response["ussdSessionCreationParameters"]["outboundSessionMessageRequest"]["outboundUSSDTextMessage"]["response"]
+        else 
+            user_input=nil
+        end
+        res=( params[:expect] == user_input )
+        if not response.nil?
+          if res
+            terminate_session sid, params[:response_ok]
+          else
+            terminate_session sid, params[:response_cancel]
+          end
+        end
+        Rails.logger.debug("UssdAuthClient authenticate: #{res}")
+        return res
+    rescue Net::ReadTimeout    
+        Rails.logger.debug("UssdAuthClient authenticate timeout")
+        return false
+    end
   end
   
 end
