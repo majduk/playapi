@@ -57,7 +57,9 @@ class GenericAPIClient
      uri = URI.parse( base_uri + path + qstring)
      headers={}
      if http_method==:post or http_method==:put and not body.nil? 
-      headers['Content-Type'] = 'application/json'
+      content_type = 'application/json' 
+      content_type = config[:content_type] unless config[:content_type].blank?
+      headers['Content-Type'] = content_type
      end     
      if uri.scheme == 'https'       
          verify_mode = OpenSSL::SSL::VERIFY_PEER
