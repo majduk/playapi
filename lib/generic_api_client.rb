@@ -20,14 +20,15 @@ class GenericAPIClient
   end
 
   def self.enabled?
-    return (not config.blank?)
+    return false if config.nil?
+    return (not config.empty?)
   end
 
   protected
   def self.return_nil_on_error(response)
        if response.kind_of? Net::HTTPSuccess
           json={}
-          json=JSON.parse(response.body) unless response.body.blank?
+          json=JSON.parse(response.body) unless response.body.nil?
           json
        else       
           nil
@@ -38,7 +39,7 @@ class GenericAPIClient
     
        if response.kind_of? Net::HTTPSuccess
           json={}
-          JSON.parse(response.body) unless response.body.blank?
+          JSON.parse(response.body) unless response.body.nil?
        else       
           raise HTTPResponseException.new(response)
        end    
@@ -47,24 +48,27 @@ class GenericAPIClient
   def self.execute(http_method,path,params = nil,body=nil,&block)
      require_configured 
      appkey=config[:appkey]
+     raise Exception.new "Unconfigured: #{conf_name}.appkey" if appkey.nil?
      base_uri=config[:uri]
+     raise Exception.new "Unconfigured: #{conf_name}.uri" if base_uri.nil?
      uri_params=config[:uri_params]
      auth=config[:auth]
+     http_config=config[:http]
      qstring="?resformat=json"
-     qstring+="&" + params.to_query unless params.blank?
-     qstring+="&" + "appkey=" + appkey unless appkey.blank?
-     qstring+="&" + uri_params.to_query unless uri_params.blank?          
+     qstring+="&" + params.to_query unless params.nil?
+     qstring+="&" + "appkey=" + appkey unless appkey.nil?
+     qstring+="&" + uri_params.to_query unless uri_params.nil?          
      uri = URI.parse( base_uri + path + qstring)
      headers={}
      if http_method==:post or http_method==:put and not body.nil? 
       content_type = 'application/json' 
-      content_type = config[:content_type] unless config[:content_type].blank?
+      content_type = config[:content_type] unless config[:content_type].nil?
       headers['Content-Type'] = content_type
-     end     
+     end  
      if uri.scheme == 'https'       
          verify_mode = OpenSSL::SSL::VERIFY_PEER
-         cert_pem = File.read(auth[:cert]) unless auth.blank?
-         key_pem = File.read(auth[:key]) unless auth.blank?
+         cert_pem = File.read(auth[:cert]) unless auth.nil?
+         key_pem = File.read(auth[:key]) unless auth.nil?
          if cert_pem
             cert = OpenSSL::X509::Certificate.new(cert_pem)
             key = OpenSSL::PKey::RSA.new(key_pem)
@@ -72,9 +76,13 @@ class GenericAPIClient
          http = Net::HTTP.new(uri.host, uri.port, :use_ssl => true, :verify_mode => verify_mode, :cert => cert, :key => key )                           
      else
        http = Net::HTTP.new(uri.host, uri.port)
-       headers[auth[:name]]=auth[:value] unless auth.blank? or auth[:name].blank? or auth[:value].blank?   
+       headers[auth[:name]]=auth[:value] unless auth.nil? or auth[:name].nil? or auth[:value].nil?   
      end
-
+     unless http_config.nil?
+       http_config.keys.each do |http_config_param|
+         http.instance_variable_set "@#{http_config_param}", http_config[http_config_param]
+       end
+     end
      request = case http_method 
       when :post 
         Net::HTTP::Post.new(uri.request_uri, initheader = headers) 
@@ -118,12 +126,22 @@ class GenericAPIClient
   end
   
   def self.require_configured
-    conf_name="#{self}".underscore.to_sym
     raise Exception.new "Unconfigured: #{conf_name}" unless enabled?    
   end    
     
   def self.config
-    return APP_CONFIG["#{self}".underscore.to_sym]
+    return APP_CONFIG[conf_name]
   end  
+
+  def self.conf_name
+    camel_cased_word="#{self}"
+    return camel_cased_word.to_sym unless camel_cased_word =~ /[A-Z-]|::/
+    word = camel_cased_word.to_s.gsub(/::/, '/')
+    word.gsub!(/([A-Z\d]+)([A-Z][a-z])/,'\1_\2')
+    word.gsub!(/([a-z\d])([A-Z])/,'\1_\2')
+    word.tr!("-", "_")
+    word.downcase!
+    return word.to_sym
+  end
 
 end

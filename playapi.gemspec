@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = "playapi"
-  s.version     = "1.2"
+  s.version     = "1.3"
   s.platform    = Gem::Platform::RUBY
   s.summary     = "PlayAPI client"
   s.email       = ""
