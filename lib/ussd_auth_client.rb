@@ -19,16 +19,24 @@ class UssdAuthClient < GenericAPIClient
   end
   
   def self.authenticate(params)
+     destination_address=params[:msisdn]
+     raise ArgumentError.new("UssdAuthClient msisdn missing") if destination_address.nil? 
+     challenge_message=params[:challenge]
+     raise ArgumentError.new("UssdAuthClient challenge text missing") if challenge_message.nil?
+     if challenge_message.length > 160
+       Rails.logger.warn("UssdAuthClient challenge_message too long, triming: #{challenge_message}")
+       challenge_message=challenge_message[0,160]
+     end      
      body = %Q(
       {
         "ussdSessionCreationParameters" : {
           "ussdSessionInformation" : {
-            "destinationAddress" : "#{params[:msisdn]}",
+            "destinationAddress" : "#{destination_address}",
             "senderAddress" : "UssdAuth"
           },
           "outboundSessionMessageRequest" : {
             "outboundUSSDTextMessage" : {
-              "message" : "#{params[:challenge]}",
+              "message" : "#{challenge_message}",
               "responseProvided" : true
             }
           }
