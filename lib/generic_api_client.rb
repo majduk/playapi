@@ -2,20 +2,23 @@ class GenericAPIClient
   require 'net/http'
   require 'net/https'
   require 'uri'
+  require 'cgi'
+  require 'json'
 
   class HTTPResponseException < StandardError
     attr_reader :response
     
-    def initialize(response)
+    def initialize(clazz,response)
+      @clazz = clazz
       @response = response
     end
     
     def inspect
-      "#<#{self.class} response=#{response.inspect}>"
+      "#<#{@clazz} response=#{response.inspect}>"
     end
     
     def to_s
-      "#{self.class}::#{response.class}"
+      "#{@clazz}::#{response.class}"
     end         
   end
 
@@ -39,12 +42,14 @@ class GenericAPIClient
     
        if response.kind_of? Net::HTTPSuccess
           json={}
-          JSON.parse(response.body) unless response.body.nil?
+          json=JSON.parse(response.body) unless response.body.nil?
+          json
        else       
-          raise HTTPResponseException.new(response)
+          raise HTTPResponseException.new(self,response)
        end    
   end
-      
+
+
   def self.execute(http_method,path,params = nil,body=nil,&block)
      require_configured 
      appkey=config[:appkey]
@@ -55,9 +60,9 @@ class GenericAPIClient
      auth=config[:auth]
      http_config=config[:http]
      qstring="?resformat=json"
-     qstring+="&" + params.to_query unless params.nil?
+     qstring+="&" + self.to_query(params) unless params.nil?
      qstring+="&" + "appkey=" + appkey unless appkey.nil?
-     qstring+="&" + uri_params.to_query unless uri_params.nil?          
+     qstring+="&" + self.to_query(uri_params) unless uri_params.nil?          
      uri = URI.parse( base_uri + path + qstring)
      headers={}
      if http_method==:post or http_method==:put and not body.nil? 
@@ -108,7 +113,6 @@ class GenericAPIClient
    
   end
   
-  
   def self.get(path,params = nil,&block)
     execute(:get,path,params,nil,&block)
   end
@@ -142,6 +146,12 @@ class GenericAPIClient
     word.tr!("-", "_")
     word.downcase!
     return word.to_sym
+  end
+
+  def self.to_query(params)
+    params.collect do |key, value|
+      "#{CGI.escape(key.to_s)}=#{CGI.escape(value.to_s)}"
+    end.sort * '&'
   end
 
 end

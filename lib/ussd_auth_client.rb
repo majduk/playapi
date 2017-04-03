@@ -1,7 +1,12 @@
 require 'generic_api_client'
 
 class UssdAuthClient < GenericAPIClient
-    
+  
+  class Error < StandardError
+  end  
+  class Timeout < Error
+  end  
+
   def self.terminate_session(sid,response="OK")     
      body = %Q(
         {
@@ -23,6 +28,7 @@ class UssdAuthClient < GenericAPIClient
      raise ArgumentError.new("UssdAuthClient msisdn missing") if destination_address.nil? 
      challenge_message=params[:challenge]
      raise ArgumentError.new("UssdAuthClient challenge text missing") if challenge_message.nil?
+     raise ArgumentError.new("UssdAuthClient expected text missing") if params[:expect].nil?
      if challenge_message.length > 160
        Rails.logger.warn("UssdAuthClient challenge_message too long, triming: #{challenge_message}")
        challenge_message=challenge_message[0,160]
@@ -45,7 +51,9 @@ class UssdAuthClient < GenericAPIClient
      )
     begin
         Rails.logger.debug("UssdAuthClient authenticate request #{body}")
-        response = post( "",body)    
+        response = post( "",body) do |request,resp|
+          raise_exception_on_error(resp)
+        end   
         Rails.logger.debug("UssdAuthClient authenticate response #{response}")      
          
         if not response.nil?
@@ -64,9 +72,12 @@ class UssdAuthClient < GenericAPIClient
         end
         Rails.logger.debug("UssdAuthClient authenticate: #{res}")
         return res
+    rescue HTTPResponseException => e
+        Rails.logger.debug("UssdAuthClient authenticate error #{e.inspect}")
+        raise Error.new
     rescue Net::ReadTimeout    
         Rails.logger.debug("UssdAuthClient authenticate timeout")
-        return false
+        raise Timeout.new
     end
   end
   
