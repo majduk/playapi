@@ -79,8 +79,24 @@ class UssdAuthClient < GenericAPIClient
     #     Rails.logger.debug("UssdAuthClient authenticate aborted #{e.inspect}")
     #     raise Abort.new
     rescue HTTPResponseException => e
-        Rails.logger.debug("UssdAuthClient authenticate error #{e.inspect}")
-        raise Error.new
+        api_response=e.response
+        raise Error.new if api_response.nil?
+        raise Error.new if api_response.body.nil?
+        api_response = JSON.parse api_response.body
+        begin
+          api_response = api_response["requestError"]["serviceException"]["variables"][0]
+        rescue NoMethodError
+          api_response = nil
+        end
+        case api_response
+        #TODO: ustalenie listy kodow bledow
+        when "Submit_sm or submit_multi failed"
+            Rails.logger.debug("UssdAuthClient authenticate abort #{e.inspect}")
+            raise Abort.new api_response
+        else
+            Rails.logger.debug("UssdAuthClient authenticate error #{e.inspect}")
+            raise Error.new api_response
+        end
     rescue Net::ReadTimeout    
         Rails.logger.debug("UssdAuthClient authenticate timeout")
         raise Timeout.new

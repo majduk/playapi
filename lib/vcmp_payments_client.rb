@@ -57,10 +57,16 @@ class VcmpPaymentsClient < GenericAPIClient
         raise_exception_on_error(response)
       end         
     rescue HTTPResponseException => e
+      case e.response
+        when Net::HTTPPaymentRequired
+          error_code = "VcmpPaymentsClient::InsufficientFunds"
+        else
+          error_code = e
+      end
       Rails.logger.warn("VcmpPaymentsClient.reserve exception #{e} at #{e.backtrace[0..3]}")
       return VcmpPayment.new(
         :error?       => true,
-        :code        =>  "#{e}",
+        :code        =>  "#{error_code}",
       )
     rescue StandardError => e
       Rails.logger.warn("VcmpPaymentsClient.reserve exception #{e} at #{e.backtrace[0..3]}")
