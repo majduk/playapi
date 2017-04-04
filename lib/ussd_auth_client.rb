@@ -6,6 +6,8 @@ class UssdAuthClient < GenericAPIClient
   end  
   class Timeout < Error
   end  
+  class Abort < Error
+  end    
 
   def self.terminate_session(sid,response="OK")     
      body = %Q(
@@ -72,6 +74,10 @@ class UssdAuthClient < GenericAPIClient
         end
         Rails.logger.debug("UssdAuthClient authenticate: #{res}")
         return res
+    #TODO: 
+    # rescue HTTPResponseException "user abort"
+    #     Rails.logger.debug("UssdAuthClient authenticate aborted #{e.inspect}")
+    #     raise Abort.new
     rescue HTTPResponseException => e
         Rails.logger.debug("UssdAuthClient authenticate error #{e.inspect}")
         raise Error.new
