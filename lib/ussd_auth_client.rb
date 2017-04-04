@@ -74,10 +74,6 @@ class UssdAuthClient < GenericAPIClient
         end
         Rails.logger.debug("UssdAuthClient authenticate: #{res}")
         return res
-    #TODO: 
-    # rescue HTTPResponseException "user abort"
-    #     Rails.logger.debug("UssdAuthClient authenticate aborted #{e.inspect}")
-    #     raise Abort.new
     rescue HTTPResponseException => e
         api_response=e.response
         raise Error.new if api_response.nil?
@@ -89,8 +85,10 @@ class UssdAuthClient < GenericAPIClient
           api_response = nil
         end
         case api_response
-        #TODO: ustalenie listy kodow bledow
-        when "Submit_sm or submit_multi failed"
+        when "submit_sm or submit_multi timed out"
+            Rails.logger.debug("UssdAuthClient authenticate timeout #{e.inspect}")
+            raise Timeout.new api_response          
+        when "submit_sm or submit_multi failed"
             Rails.logger.debug("UssdAuthClient authenticate abort #{e.inspect}")
             raise Abort.new api_response
         else
@@ -100,6 +98,9 @@ class UssdAuthClient < GenericAPIClient
     rescue Net::ReadTimeout    
         Rails.logger.debug("UssdAuthClient authenticate timeout")
         raise Timeout.new
+    rescue StandardError
+        Rails.logger.debug("UssdAuthClient authenticate error #{e.inspect}")
+        raise Error.new      
     end
   end
   
