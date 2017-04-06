@@ -94,7 +94,7 @@ class UssdAuthClient < GenericAPIClient
             Rails.logger.debug("UssdAuthClient authenticate abort #{e.inspect}")
             raise Abort.new api_response
         when "Absent Subscriber"
-            Rails.logger.debug("UssdAuthClient authenticate abort #{e.inspect}")
+            Rails.logger.debug("UssdAuthClient authenticate absent #{e.inspect}")
             raise Absent.new api_response
         else
             Rails.logger.debug("UssdAuthClient authenticate error #{e.inspect}")
