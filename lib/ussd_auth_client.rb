@@ -8,6 +8,8 @@ class UssdAuthClient < GenericAPIClient
   end  
   class Abort < Error
   end    
+  class Absent < Error
+  end    
 
   def self.terminate_session(sid,response="OK")     
      body = %Q(
@@ -88,9 +90,12 @@ class UssdAuthClient < GenericAPIClient
         when "submit_sm or submit_multi timed out"
             Rails.logger.debug("UssdAuthClient authenticate timeout #{e.inspect}")
             raise Timeout.new api_response          
-        when "submit_sm or submit_multi failed"
+        when "submit_sm or submit_multi aborted"
             Rails.logger.debug("UssdAuthClient authenticate abort #{e.inspect}")
             raise Abort.new api_response
+        when "Absent Subscriber"
+            Rails.logger.debug("UssdAuthClient authenticate abort #{e.inspect}")
+            raise Absent.new api_response
         else
             Rails.logger.debug("UssdAuthClient authenticate error #{e.inspect}")
             raise Error.new api_response

@@ -67,13 +67,47 @@ class UssdAuthClientTest < Minitest::Test
       assert_equal "/uri?resformat=json&appkey=appkey", Net::HTTP.last_request_path
     end
 
-    def test_internal_error
+    def test_internal_error_submit_failed
       response={
       "requestError" => {
        "serviceException" => {
         "messageId" => "SVC0001",
          "text" => "A service error occurred. Error code is %",
-         "variables" => [ "Submit_sm or submit_multi failed" ]
+         "variables" => [ "submit_sm or submit_multi failed" ]
+        }
+       }
+      }
+      Net::HTTP.respond_internal_error response.to_json
+      assert_raises(UssdAuthClient::Error) {
+        UssdAuthClient.authenticate auth_params
+      }
+      assert_equal "/uri?resformat=json&appkey=appkey", Net::HTTP.last_request_path
+    end
+
+    def test_internal_error_submit_timed_out
+      response={
+      "requestError" => {
+       "serviceException" => {
+        "messageId" => "SVC0001",
+         "text" => "A service error occurred. Error code is %",
+         "variables" => [ "submit_sm or submit_multi timed out" ]
+        }
+       }
+      }
+      Net::HTTP.respond_internal_error response.to_json
+      assert_raises(UssdAuthClient::Timeout) {
+        UssdAuthClient.authenticate auth_params
+      }
+      assert_equal "/uri?resformat=json&appkey=appkey", Net::HTTP.last_request_path
+    end
+
+    def test_internal_error_submit_aborted
+      response={
+      "requestError" => {
+       "serviceException" => {
+        "messageId" => "SVC0001",
+         "text" => "A service error occurred. Error code is %",
+         "variables" => [ "submit_sm or submit_multi aborted" ]
         }
        }
       }
@@ -83,6 +117,24 @@ class UssdAuthClientTest < Minitest::Test
       }
       assert_equal "/uri?resformat=json&appkey=appkey", Net::HTTP.last_request_path
     end
+
+    def test_internal_error_submit_absent
+      response={
+      "requestError" => {
+       "serviceException" => {
+        "messageId" => "SVC0001",
+         "text" => "A service error occurred. Error code is %",
+         "variables" => [ "Absent Subscriber" ]
+        }
+       }
+      }
+      Net::HTTP.respond_internal_error response.to_json
+      assert_raises(UssdAuthClient::Absent) {
+        UssdAuthClient.authenticate auth_params
+      }
+      assert_equal "/uri?resformat=json&appkey=appkey", Net::HTTP.last_request_path
+    end
+
 
     def test_bad_request
       response={"param"=>"value"}
